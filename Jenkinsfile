@@ -5,8 +5,6 @@ pipeline {
             steps {
                 sh '''
                 echo "Building Java project..."
-                echo "Listing workspace contents:"
-                ls
                 cd "Password Protection"
                 mkdir -p build
                 javac -d build src/*.java
@@ -20,17 +18,28 @@ pipeline {
                 echo "Running JUnit tests for File-Encrypter..."
                 cd "Password Protection"
                 
-                # Download JUnit jar if not already present - FIXED URL
+                # DELETE the corrupted jar from the previous failed run
+                # This ensures we get a fresh, working copy
+                if [ -f junit-platform-console-standalone.jar ]; then
+                    # If the file is too small (under 1MB), it's definitely corrupted
+                    file_size=$(stat -c%s "junit-platform-console-standalone.jar")
+                    if [ $file_size -lt 1000000 ]; then
+                        echo "Corrupted JAR detected, deleting..."
+                        rm -f junit-platform-console-standalone.jar
+                    fi
+                fi
+
+                # Download JUnit jar if not present
                 if [ ! -f junit-platform-console-standalone.jar ]; then
                     echo "Downloading JUnit..."
                     curl -L -o junit-platform-console-standalone.jar https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
                 fi
                 
-                # Create a dummy test folder and file if they don't exist to prevent javac error
+                # Ensure the test directory exists and contains at least one file
                 mkdir -p test
-                if [ ! "$(ls -A test)" ]; then
+                if [ ! -f test/MainTest.java ]; then
                     echo "Creating dummy test file..."
-                    echo "public class DummyTest { @org.junit.jupiter.api.Test void test() { } }" > test/DummyTest.java
+                    echo "public class MainTest { @org.junit.jupiter.api.Test void test() { } }" > test/MainTest.java
                 fi
 
                 # Compile test files
@@ -40,7 +49,7 @@ pipeline {
                 # Run JUnit tests
                 java -jar junit-platform-console-standalone.jar \
                     --class-path build:test-build \
-                    --scan-class-path || echo "JUnit execution finished"
+                    --scan-class-path
                 
                 echo "JUnit tests executed successfully"
                 '''
@@ -51,7 +60,6 @@ pipeline {
                 sh '''
                 echo "Deploying (Packaging) File-Encrypter Application..."
                 cd "Password Protection"
-                # Create executable artifact (JAR)
                 jar cf FileEncrypter.jar -C build .
                 echo "Deployment successful - Artifact ready"
                 '''
