@@ -7,7 +7,7 @@ The Algorith used here is the popular Advance Encryption Standard(AES)
 I have used Cipher Block Chain method here 
 
 and have integrated `SHA-256` hash algorithm for authentication here 
-which uses SALT to avoid rainbow attacks to passwords here
+which uses SALT to avoid raiasdasdasddddddddnbow attacks to passwords here
 `PBKDF2` function is used for computing this in our code 
 
 When you run the program a window will open <br>
